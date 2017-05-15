@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+
+<AnchorPane id="rootPane" fx:id="root"
+	xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1">
+	<children>
+		<BorderPane id="sample.SampleDrawBK" prefHeight="407.0"
+			prefWidth="400.0">
+			<center>
+				<Pane BorderPane.alignment="CENTER" fx:id="canvasPane">
+				</Pane>
+			</center>
+			<bottom>
+				<ToolBar BorderPane.alignment="CENTER">
+					<items>
+						<ChoiceBox id="choise" fx:id="choiceList" onAction="#choiceColors">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+								</FXCollections>
+							</items>
+						</ChoiceBox>
+					</items>
+				</ToolBar>
+			</bottom>
+			<top>
+				<MenuBar prefWidth="400.0" BorderPane.alignment="CENTER">
+					<menus>
+						<Menu mnemonicParsing="false" text="接続">
+							<items>
+								<MenuItem mnemonicParsing="false" text="再接続" />
+								<MenuItem mnemonicParsing="false" text="新規" />
+								<MenuItem mnemonicParsing="false" text="切断" />
+							</items>
+						</Menu>
+					</menus>
+				</MenuBar>
+			</top>
+		</BorderPane>
+	</children>
+</AnchorPane>
