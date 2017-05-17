@@ -61,9 +61,8 @@ public class DrawLineWebSocketClient {
 
 	public void connect(String url) {
 		WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-		Class<?> c = DrawLineWebSocketClient.class;
 		try {
-			session = container.connectToServer(c, URI.create(url));
+			session = container.connectToServer(this, URI.create(url));
 		} catch (DeploymentException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
