@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import javax.enterprise.event.Observes;
+
+import org.jboss.weld.environment.se.Weld;
+import org.jboss.weld.environment.se.WeldContainer;
+
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,6 +20,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import jp.co.mforce.sol.pictchat.client.model.DrawLineModel;
+import jp.co.mforce.sol.pictchat.client.model.LineDrawer;
 import jp.co.mforce.sol.pictchat.client.ws.DrawLineWebSocketClient;
 
 public class PictChatClient extends Application implements Initializable {
@@ -25,6 +32,9 @@ public class PictChatClient extends Application implements Initializable {
 	private Pane canvasPane;
 
 	private DrawLineWebSocketClient wsClient;
+	private PictChatCanvas canvas;
+
+	private static LineDrawer lineDrawer;
 
 	public static void main(String[] args) {
 		launch();
@@ -36,6 +46,13 @@ public class PictChatClient extends Application implements Initializable {
 		choiceList.setItems(FXCollections.observableArrayList());
 		choiceList.getItems().addAll(list);
 		choiceList.setValue(Colors.BLACK);
+
+		Weld weld = new Weld();
+		WeldContainer container = weld.initialize();
+		wsClient = container.instance().select(DrawLineWebSocketClient.class).get();
+		lineDrawer = new LineDrawer(canvasPane, wsClient);
+		wsClient.connect();
+
 	}
 
 	@Override
@@ -46,13 +63,15 @@ public class PictChatClient extends Application implements Initializable {
 		fxmllorder.setController(this);
 
 		Parent root = fxmllorder.load();
-		wsClient = new DrawLineWebSocketClient(canvasPane);
-		wsClient.connect();
 
 		stage.setTitle("SampleDraw");
 		stage.setScene(new Scene(root));
 		stage.show();
 
+	}
+
+	public static void update(@Observes DrawLineModel lineModel) {
+		lineDrawer.drawLine(lineModel);
 	}
 
 	public void choiceColors() {

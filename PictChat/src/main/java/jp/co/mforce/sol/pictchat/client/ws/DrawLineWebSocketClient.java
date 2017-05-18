@@ -3,6 +3,8 @@ package jp.co.mforce.sol.pictchat.client.ws;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -16,22 +18,26 @@ import javax.websocket.WebSocketContainer;
 
 import com.google.gson.Gson;
 
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import jp.co.mforce.sol.pictchat.client.model.DrawActions;
 import jp.co.mforce.sol.pictchat.client.model.DrawLineModel;
-import jp.co.mforce.sol.pictchat.client.model.LineDrawer;
 
 @ClientEndpoint
 public class DrawLineWebSocketClient {
 	private final String URL = "ws://localhost:8080/pict";
 	private Session session;
 
-	private final LineDrawer drawer;
+	@Inject
+	Event<DrawLineModel> models;
 
-	public DrawLineWebSocketClient(Pane canvasPane) {
-		drawer = new LineDrawer(canvasPane, this);
+	// private final LineDrawer drawer;
+
+	public DrawLineWebSocketClient() {
+		// drawer = new LineDrawer(canvasPane, this);
 	}
+	// public DrawLineWebSocketClient(Pane canvasPane) {
+	// drawer = new LineDrawer(canvasPane, this);
+	// }
 
 	@OnError
 	public void onError(Session session, Throwable t) {
@@ -42,7 +48,9 @@ public class DrawLineWebSocketClient {
 	public void onMessage(String msg, Session session) {
 		Gson gson = new Gson();
 		DrawLineModel lineModel = gson.fromJson(msg, DrawLineModel.class);
-		drawer.drawLine(lineModel);
+		models.fire(lineModel);
+		
+		// drawer.drawLine(lineModel);
 	}
 
 	@OnClose
