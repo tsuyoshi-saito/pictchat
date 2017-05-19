@@ -4,9 +4,9 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
+import jp.co.mforce.sol.pictchat.client.PictChatClient.DrawLineWebSocketClient;
 import jp.co.mforce.sol.pictchat.client.model.DrawActions;
 import jp.co.mforce.sol.pictchat.client.model.DrawLineModel;
-import jp.co.mforce.sol.pictchat.client.ws.DrawLineWebSocketClient;
 
 public class PictChatCanvas extends Canvas {
 

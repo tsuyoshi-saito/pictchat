@@ -1,13 +1,28 @@
 package jp.co.mforce.sol.pictchat.client;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import javax.enterprise.event.Observes;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
+import javax.websocket.ContainerProvider;
+import javax.websocket.DeploymentException;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
+
+import com.google.gson.Gson;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
@@ -19,10 +34,11 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import jp.co.mforce.sol.pictchat.client.model.DrawActions;
 import jp.co.mforce.sol.pictchat.client.model.DrawLineModel;
-import jp.co.mforce.sol.pictchat.client.model.LineDrawer;
-import jp.co.mforce.sol.pictchat.client.ws.DrawLineWebSocketClient;
+import jp.co.mforce.sol.pictchat.client.model.PictChatId;
 
 public class PictChatClient extends Application implements Initializable {
 	@FXML
@@ -32,9 +48,8 @@ public class PictChatClient extends Application implements Initializable {
 	private Pane canvasPane;
 
 	private DrawLineWebSocketClient wsClient;
-	private PictChatCanvas canvas;
 
-	private static LineDrawer lineDrawer;
+	private Map<String, PictChatCanvas> canvases = new HashMap<>();
 
 	public static void main(String[] args) {
 		launch();
@@ -47,10 +62,7 @@ public class PictChatClient extends Application implements Initializable {
 		choiceList.getItems().addAll(list);
 		choiceList.setValue(Colors.BLACK);
 
-		Weld weld = new Weld();
-		WeldContainer container = weld.initialize();
-		wsClient = container.instance().select(DrawLineWebSocketClient.class).get();
-		lineDrawer = new LineDrawer(canvasPane, wsClient);
+		wsClient = new DrawLineWebSocketClient();
 		wsClient.connect();
 
 	}
@@ -66,16 +78,93 @@ public class PictChatClient extends Application implements Initializable {
 
 		stage.setTitle("SampleDraw");
 		stage.setScene(new Scene(root));
+		
+		PictChatCanvas initCanvas = new PictChatCanvas(Color.BLACK, wsClient);
+		canvasPane.getChildren().add(initCanvas);
+
 		stage.show();
 
 	}
 
-	public static void update(@Observes DrawLineModel lineModel) {
-		lineDrawer.drawLine(lineModel);
-	}
-
 	public void choiceColors() {
 	}
+
+	public void drawLine(DrawLineModel lineModel) {
+		PictChatId picId = new PictChatId(lineModel.getId(), lineModel.getColor());
+		if (!canvases.containsKey(picId.getPictId())) {
+			PictChatCanvas canvas = new PictChatCanvas(lineModel.getColor(), wsClient);
+			canvases.put(picId.getPictId(), canvas);
+			canvasPane.getChildren().add(canvas);
+		}
+		canvases.get(picId.getPictId()).drawLine(lineModel);
+	}
+
+	@ClientEndpoint
+	public class DrawLineWebSocketClient {
+		private final String URL = "ws://localhost:8080/pict";
+		private Session session;
+
+		public DrawLineWebSocketClient() {
+		}
+
+		@OnError
+		public void onError(Session session, Throwable t) {
+			t.printStackTrace(System.err);
+		}
+
+		@OnMessage
+		public void onMessage(String msg, Session session) {
+			Gson gson = new Gson();
+			DrawLineModel lineModel = gson.fromJson(msg, DrawLineModel.class);
+			drawLine(lineModel);
+		}
+
+		@OnClose
+		public void onClose(Session session, CloseReason closeReason) {
+			System.out.println("closed");
+		}
+
+		@OnOpen
+		public void onOpen(Session session) {
+			System.out.println("opened");
+		}
+
+		public void connect() {
+			connect(URL);
+		}
+
+		public void connect(String url) {
+			WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+			try {
+				session = container.connectToServer(this, URI.create(url));
+			} catch (DeploymentException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		public void sendPointXY(double pointX, double pointY, Color color, DrawActions action) {
+			DrawLineModel drawInfo = new DrawLineModel();
+			drawInfo.setId(this.session.getId());
+			drawInfo.setColor(color);
+			drawInfo.setPointX(pointX);
+			drawInfo.setPointY(pointY);
+			drawInfo.setAction(action);
+
+			Gson gson = new Gson();
+			try {
+				session.getBasicRemote().sendText(gson.toJson(drawInfo));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		public Session getSession() {
+			return this.session;
+		}
+	}
+
 }
 
 enum Colors {
